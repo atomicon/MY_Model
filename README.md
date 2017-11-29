@@ -5,7 +5,7 @@ A DataMapper-ORM like model for CodeIgniter
 ## Example usage:
 
 Assuming you have a table "users"
-and a model: "class User_model extends MY_Model { ... }"
+and a model: ```php class User_model extends MY_Model { ... }```
 
 ## Load a single item
 
