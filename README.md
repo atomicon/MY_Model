@@ -156,7 +156,7 @@ if ($users->exists())
 }
 ```
 
-## Using the magic "__get_" function to access properties
+## Using the magic ```__get_``` function to access properties
 
 in your User_model create a functions:
 
