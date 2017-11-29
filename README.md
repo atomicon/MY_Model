@@ -188,9 +188,9 @@ var_dump($user->children);
 
 ## Metadata
 
-if you want to use the metadata functions create the following table
+if you want to use the metadata functions create the following table.
 
-...
+```
 CREATE TABLE `metadata` (
 	`id` bigint(20) NOT NULL AUTO_INCREMENT,
 	`object_name` varchar(255) DEFAULT NULL,
@@ -199,4 +199,4 @@ CREATE TABLE `metadata` (
 	`value` longtext,
 	PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-...
+```
