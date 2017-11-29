@@ -526,7 +526,7 @@ class MY_Model extends CI_Model
 	 * MY_Model::get_by_metadata()
 	 *
 	 * Gets all objects (self) with certain metadata
-	 
+	 *
 	 * @param string $name The meta name to get
 	 * @param string $value optional value
 	 * @param string $object_id (optional) object_id
