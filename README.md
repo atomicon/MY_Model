@@ -1,5 +1,7 @@
 # MY_Model
 
+A DataMapper-ORM like model for CodeIgniter
+
 ## Example usage:
 
 Assuming you have a table "users"
