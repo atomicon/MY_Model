@@ -281,37 +281,20 @@ class MY_Model extends CI_Model
 			}
 		}
 		return $this;
-	}
+	}	
 	
-	public function insert_crosstable($crosstable, $data)
-	{
-		if ($this->exists())
-		{
-			$this->db->where($data);
-			$this->db->limit(1);
-			$res = $this->db->get($crosstable)->result();
-			if (empty($res))
-			{
-				return $this->db->insert($crosstable, $data);
-			}
-			return true;
-		}
-		return false;
-	}
-	
-	public function delete_crosstable($crosstable, $data)
-	{
-		if ($this->exists())
-		{
-			$this->db->where($data);
-			return $this->db->delete($crosstable);
-		}
-		return false;
-	}
-	
+	/**
+	 * MY_Model::count_all()
+	 *
+	 * Counts all records with the current parameters and options
+	 * It will clone the codeigniter database and query on the clone
+	 *
+	 * @return int
+	 */
 	public function count_all()
 	{
-		$row = $this->db->select('COUNT(*) as count_all')->get($this->table)->row();
+		$db = clone $this->db;
+		$row = $db->select('COUNT(*) as count_all')->get($this->table)->row();
 		if (!empty($row->count_all))
 		{
 			return $row->count_all;
@@ -326,12 +309,13 @@ class MY_Model extends CI_Model
 	 *
 	 * @param string $key The key (column) to use as the key
 	 * @param string $value The value (column) to use as the label
+	 * @param bool $get_if_empty Retrieve the dataset if it is empty
 	 * @return array
 	 */
-	public function as_options($key = 'id', $value = 'title', $get_on_empty = true)
+	public function as_options($key = 'id', $value = 'title', $get_if_empty = true)
 	{
 		$options = array();
-		if (!$this->exists() && $get_on_empty)
+		if (!$this->exists() && $get_if_empty)
 		{
 			$this->get();
 		}
