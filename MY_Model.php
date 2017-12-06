@@ -13,40 +13,40 @@ class MY_Model extends CI_Model
 {
 	// contains all information about the tables
 	static $table_data = null;
-	
+
 	// when does the table cache needs to be renewed? time to live in seconds
 	static $table_data_cache_ttl = 60;
-	
+
 	// table name for this model
 	public $table = null;
-	
+
 	// primary key for the current model
 	public $primary_key = null;
-	
+
 	// last query
 	public $last_query = '';
-	
+
 	// the data stored for this specific model
 	public $stored = array();
-	
+
 	// array of columns to be protected
 	public $protected = array();
-	
+
 	// the field containing the slug (optional)
 	public $slug_key = 'slug';
-	
+
 	// do we have the table metadata
 	public $metadata = true;
-	
+
 	// do we want to cache metadata? (saves queries)
 	public $cache_metadata = true;
-	
+
 	// the cached metadata
 	public $cached_metadata = array();
-	
+
 	// more results stored in here (where the first is always this)
 	public $all = array();
-	
+
 	/**
 	 * MY_Model::__construct()
 	 *
@@ -72,7 +72,7 @@ class MY_Model extends CI_Model
 			}
 		}
 	}
-	
+
 	/**
 	 * MY_Model::id()
 	 *
@@ -92,7 +92,7 @@ class MY_Model extends CI_Model
 		}
 		return null;
 	}
-	
+
 	/**
 	 * MY_Model::exists()
 	 *
@@ -104,7 +104,7 @@ class MY_Model extends CI_Model
 	{
 		return !empty($this->stored[$this->primary_key]);
 	}
-	
+
 	/**
 	 * MY_Model::get()
 	 *
@@ -151,7 +151,7 @@ class MY_Model extends CI_Model
 		}
 		return $this;
 	}
-	
+
 	/**
 	 * MY_Model::save()
 	 *
@@ -165,12 +165,12 @@ class MY_Model extends CI_Model
 	{
 		$result = false;
 		$data   = $this->stored;
-		
+
 		if (!in_array($this->primary_key, $this->protected))
 		{
 			$this->protected[] = $this->primary_key;
 		}
-		
+
 		foreach ($data as $index => $value)
 		{
 			if (in_array($index, $this->protected))
@@ -178,7 +178,7 @@ class MY_Model extends CI_Model
 				unset($data[$index]);
 			}
 		}
-		
+
 		if (!empty($this->slug_key) && $this->has_field($this->slug_key))
 		{
 			if (empty($data[$this->slug_key]))
@@ -190,13 +190,13 @@ class MY_Model extends CI_Model
 				unset($data[$this->slug_key]);
 			}
 		}
-		
+
 		if ($this->exists())
 		{
 			if (array_key_exists('updated', $data))
 			{
 				$this->stored['updated'] = $data['updated'] = date('Y-m-d H:i:s');
-				
+
 			}
 			$this->where($this->primary_key, $this->stored[$this->primary_key]);
 			$result = $this->db->update($this->table, $data);
@@ -216,7 +216,7 @@ class MY_Model extends CI_Model
 		$this->last_query = $this->db->last_query();
 		return $result;
 	}
-	
+
 	/**
 	 * MY_Model::delete()
 	 *
@@ -230,14 +230,14 @@ class MY_Model extends CI_Model
 		{
 			// delete all metadata
 			$this->unset_all_metadata();
-			
+
 			// delete self
 			$this->where($this->primary_key, $this->stored[$this->primary_key]);
 			return $this->db->delete($this->table);
 		}
 		return false;
 	}
-	
+
 	/**
 	 * MY_Model::fill()
 	 *
@@ -258,7 +258,7 @@ class MY_Model extends CI_Model
 		}
 		return $this;
 	}
-	
+
 	/**
 	 * MY_Model::reset()
 	 *
@@ -281,8 +281,8 @@ class MY_Model extends CI_Model
 			}
 		}
 		return $this;
-	}	
-	
+	}
+
 	/**
 	 * MY_Model::count_all()
 	 *
@@ -301,7 +301,7 @@ class MY_Model extends CI_Model
 		}
 		return 0;
 	}
-	
+
 	/**
 	 * MY_Model::as_options()
 	 *
@@ -325,7 +325,7 @@ class MY_Model extends CI_Model
 		}
 		return $options;
 	}
-	
+
 	/**
 	 * MY_Model::metadata()
 	 *
@@ -341,50 +341,44 @@ class MY_Model extends CI_Model
 		{
 			return $default;
 		}
-		
-		if ($this->exists())
+
+		if ($this->cache_metadata)
 		{
-			if ($this->cache_metadata)
+			if (empty($this->cached_metadata))
 			{
-				if (empty($this->cached_metadata))
+				$this->cached_metadata = array();
+
+				$rows = $this->db->where(array(
+					'object_name' => $this->table,
+					'object_id' => $this->id
+				))->order_by('name')->get('metadata')->result();
+
+				foreach ($rows as $row)
 				{
-					$this->cached_metadata = array();
-					
-					$rows = $this->db->where(array(
-						'object_name' => $this->table,
-						'object_id' => $this->id
-					))->order_by('name')->get('metadata')->result();
-					
-					foreach ($rows as $row)
-					{
-						$this->cached_metadata[$row->name] = $row->value;
-					}
+					$this->cached_metadata[$row->name] = $row->value;
 				}
-				
-				$result = $default;
-				
-				if (array_key_exists($name, $this->cached_metadata))
-				{
-					$result = $this->cached_metadata[$name];
-				}
-				
-				return $result;
 			}
+
+			$result = $default;
+
+			if (array_key_exists($name, $this->cached_metadata))
+			{
+				$result = $this->cached_metadata[$name];
+			}
+
+			return $result;
 		}
-		
-		if ($this->exists())
-		{
-			$row = $this->db->where(array(
-				'object_name' => $this->table,
-				'object_id' => $this->id,
-				'name' => $name
-			))->limit(1)->get('metadata')->row();
-			
-			return empty($row->value) ? $default : $row->value;
-		}
-		return $default;
+
+
+		$row = $this->db->where(array(
+			'object_name' => $this->table,
+			'object_id' => $this->id,
+			'name' => $name
+		))->limit(1)->get('metadata')->row();
+
+		return empty($row->value) ? $default : $row->value;
 	}
-	
+
 	/**
 	 * MY_Model::set_metadata()
 	 *
@@ -397,13 +391,13 @@ class MY_Model extends CI_Model
 	function set_metadata($name, $value = null)
 	{
 		$result = false;
-		
+
 		if (!$this->metadata)
 		{
 			return $result;
 		}
-		
-		if ($this->exists() && !is_null($name))
+
+		if (!is_null($name))
 		{
 			if (is_array($name) && is_null($value))
 			{
@@ -414,13 +408,13 @@ class MY_Model extends CI_Model
 				}
 				return true;
 			}
-			
+
 			$row = $this->db->where(array(
 				'object_name' => $this->table,
 				'object_id' => $this->id,
 				'name' => $name
 			))->limit(1)->get('metadata')->row();
-			
+
 			if (empty($row))
 			{
 				$data   = array(
@@ -438,15 +432,15 @@ class MY_Model extends CI_Model
 				$result = $this->db->update('metadata');
 			}
 		}
-		
+
 		if ($result && $this->cache_metadata && is_array($this->cached_metadata))
 		{
 			$this->cached_metadata[$name] = $value;
 		}
-		
+
 		return $result;
 	}
-	
+
 	/**
 	 * MY_Model::unset_metadata()
 	 *
@@ -461,26 +455,23 @@ class MY_Model extends CI_Model
 		{
 			return false;
 		}
-		
-		if ($this->exists())
+
+		$row = $this->db->where(array(
+			'object_name' => $this->table,
+			'object_id' => $this->id,
+			'name' => $name
+		))->limit(1)->get('metadata')->row();
+
+		unset($this->cached_metadata[$name]);
+
+		if (!empty($row))
 		{
-			$row = $this->db->where(array(
-				'object_name' => $this->table,
-				'object_id' => $this->id,
-				'name' => $name
-			))->limit(1)->get('metadata')->row();
-			
-			unset($this->cached_metadata[$name]);
-			
-			if (!empty($row))
-			{
-				$this->db->where('id', $row->id);
-				return $this->db->delete('metadata');
-			}
+			$this->db->where('id', $row->id);
+			return $this->db->delete('metadata');
 		}
 		return false;
 	}
-	
+
 	/**
 	 * MY_Model::unset_all_metadata()
 	 *
@@ -494,7 +485,7 @@ class MY_Model extends CI_Model
 		{
 			return false;
 		}
-		
+
 		if ($this->exists())
 		{
 			$this->cached_metadata = array();
@@ -505,7 +496,7 @@ class MY_Model extends CI_Model
 		}
 		return false;
 	}
-	
+
 	/**
 	 * MY_Model::get_by_metadata()
 	 *
@@ -516,36 +507,35 @@ class MY_Model extends CI_Model
 	 * @param string $object_id (optional) object_id
 	 * @return self
 	 */
-	public function get_by_metadata($name, $value = null, $object_id = null)
+	public function get_by_metadata($name, $value = false, $object_id = false)
 	{
 		if (!$this->metadata)
 		{
 			return $this;
 		}
-		
-		
+
 		$this->db->join('metadata', 'metadata.object_id = ' . $this->table . '.' . $this->primary_key);
-		
+
 		$where = array(
 			'metadata.object_name' => $this->table,
 			'metadata.name' => $name
 		);
-		
-		if (!is_null($value))
+
+		if ($value !== FALSE)
 		{
 			$where['metadata.value'] = $value;
 		}
-		
-		if (!is_null($object_id))
+
+		if ($object_id !== FALSE)
 		{
 			$where['metadata.object_id'] = $object_id;
 		}
-		
+
 		$this->db->select($this->table . '.*');
 		$this->db->where($where);
 		$this->db->from($this->table);
 		$result = $this->db->get()->result();
-		
+
 		if (empty($result))
 		{
 			$this->reset();
@@ -578,10 +568,10 @@ class MY_Model extends CI_Model
 				$this->all[] = $object;
 			}
 		}
-		
+
 		return $this;
 	}
-	
+
 	/**
 	 * MY_Model::has_field()
 	 *
@@ -604,7 +594,7 @@ class MY_Model extends CI_Model
 		}
 		return FALSE;
 	}
-	
+
 	/**
 	 * MY_Model::delete_cache()
 	 *
@@ -620,7 +610,7 @@ class MY_Model extends CI_Model
 		}
 		return true;
 	}
-	
+
 	/********************************
 	 * Magic functions
 	 *******************************/
@@ -658,7 +648,7 @@ class MY_Model extends CI_Model
 		}
 		return null;
 	}
-	
+
 	/**
 	 * MY_Model::__set()
 	 *
@@ -677,7 +667,7 @@ class MY_Model extends CI_Model
 			$this->$name = $value;
 		}
 	}
-	
+
 	/**
 	 * MY_Model::__isset()
 	 *
@@ -695,7 +685,7 @@ class MY_Model extends CI_Model
 			return isset($this->$name);
 		}
 	}
-	
+
 	/**
 	 * MY_Model::__call()
 	 *
@@ -730,11 +720,11 @@ class MY_Model extends CI_Model
 			return null;
 		}
 	}
-	
+
 	/********************************
 	 * Private functions
 	 *******************************/
-	
+
 	/**
 	 * MY_Model::_get_table_data()
 	 *
@@ -762,7 +752,7 @@ class MY_Model extends CI_Model
 					}
 				}
 			}
-			
+
 			MY_Model::$table_data = array();
 			if (isset(get_instance()->db))
 			{
@@ -784,7 +774,7 @@ class MY_Model extends CI_Model
 		}
 		$this->reset();
 	}
-	
+
 	/**
 	 * MY_Model::_get_table()
 	 *
@@ -803,7 +793,7 @@ class MY_Model extends CI_Model
 			$this->table = plural(strtolower($class));
 		}
 	}
-	
+
 	/**
 	 * MY_Model::_slugify()
 	 *
@@ -811,30 +801,30 @@ class MY_Model extends CI_Model
 	 *
 	 * @return string
 	 */
-	
+
 	private function _slugify($str = '')
 	{
 		$this->load->helper('inflector');
 		while (1)
-		{			
+		{
 			$str  = empty($str) ? str_replace(array('a', 'e', 'u', 'i', 'o'), '', singular($this->table)) : $str;
 			$slug = empty($str) ? '' : $str . '-';
-			
-			$uuid   = sprintf('%04x%04x-%04x-%04x-%04x-%04x%04x%04x', 
+
+			$uuid   = sprintf('%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
 				// 32 bits for "time_low"
-				mt_rand(0, 0xffff), mt_rand(0, 0xffff), 
+				mt_rand(0, 0xffff), mt_rand(0, 0xffff),
 				// 16 bits for "time_mid"
-				mt_rand(0, 0xffff), 
+				mt_rand(0, 0xffff),
 				// 16 bits for "time_hi_and_version",
-					
+
 				// four most significant bits holds version number 4
-				mt_rand(0, 0x0fff) | 0x4000, 
+				mt_rand(0, 0x0fff) | 0x4000,
 				// 16 bits, 8 bits for "clk_seq_hi_res",
-					
+
 				// 8 bits for "clk_seq_low",
-					
+
 				// two most significant bits holds zero and one for variant DCE1.1
-				mt_rand(0, 0x3fff) | 0x8000, 
+				mt_rand(0, 0x3fff) | 0x8000,
 				// 48 bits for "node"
 				mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff)
 			);
@@ -847,11 +837,11 @@ class MY_Model extends CI_Model
 		}
 		return $slug;
 	}
-	
+
 	/********************************
 	 * Compatibility functions
 	 *******************************/
-	
+
 	/**
 	 * MY_Model::get_called_class()
 	 *
