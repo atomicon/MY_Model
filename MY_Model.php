@@ -250,10 +250,7 @@ class MY_Model extends CI_Model
 		{
 			foreach ($data as $name => $value)
 			{
-				if (array_key_exists($name, $this->stored))
-				{
-					$this->stored[$name] = $value;
-				}
+				$this->$name = $value;
 			}
 		}
 		return $this;
