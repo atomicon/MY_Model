@@ -246,13 +246,23 @@ class MY_Model extends CI_Model
 	 * @param object|array $data
 	 * @return self
 	 */
-	public function fill($data)
+	public function fill($data, $only_fill_stored = TRUE)
 	{
 		if (is_array($data) || is_object($data))
 		{
 			foreach ($data as $name => $value)
 			{
-				$this->$name = $value;
+				if ($only_fill_stored)
+				{
+					if (array_key_exists($name, $this->stored))
+					{
+						$this->$name = $value;
+					}
+				}
+				else
+				{
+					$this->$name = $value;
+				}
 			}
 		}
 		return $this;
