@@ -35,6 +35,9 @@ class MY_Model extends CI_Model
 	// the field containing the slug (optional)
 	public $slug_key = 'slug';
 
+	// the slug prefix, if empty it will auto generate
+	public $slug_prefix = null;
+
 	// do we have the table metadata
 	public $metadata = true;
 
@@ -55,7 +58,6 @@ class MY_Model extends CI_Model
 	 */
 	function __construct($id = null)
 	{
-		parent::__construct();
 		$this->_get_table();
 		$this->_get_table_data();
 		if (!empty($id))
@@ -242,26 +244,15 @@ class MY_Model extends CI_Model
 	 * MY_Model::fill()
 	 *
 	 * @param object|array $data
-	 * @param boolean $only_fill_stored if true it will only fill the stored variable
 	 * @return self
 	 */
-	public function fill($data, $only_fill_stored = TRUE)
+	public function fill($data)
 	{
 		if (is_array($data) || is_object($data))
 		{
 			foreach ($data as $name => $value)
 			{
-				if ($only_fill_stored)
-				{
-					if (array_key_exists($name, $this->stored))
-					{
-						$this->$name = $value;
-					}
-				}
-				else
-				{
-					$this->$name = $value;
-				}
+				$this->$name = $value;
 			}
 		}
 		return $this;
@@ -815,9 +806,12 @@ class MY_Model extends CI_Model
 		$this->load->helper('inflector');
 		while (1)
 		{
-			$str  = empty($str) ? str_replace(array('a', 'e', 'u', 'i', 'o'), '', singular($this->table)) : $str;
-			$slug = empty($str) ? '' : $str . '-';
-
+			if (is_null($this->slug_prefix))
+			{
+				$this->slug_prefix = str_replace(array('a', 'e', 'u', 'i', 'o'), '', singular($this->table));
+				$this->slug_prefix = str_replace('_', '-', $this->slug_prefix);
+			}
+			$slug = empty($this->slug_prefix) ? '' : $this->slug_prefix.'-';
 			$uuid   = sprintf('%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
 				// 32 bits for "time_low"
 				mt_rand(0, 0xffff), mt_rand(0, 0xffff),
