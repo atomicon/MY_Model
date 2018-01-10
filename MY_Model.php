@@ -185,7 +185,7 @@ class MY_Model extends CI_Model
 		{
 			if (empty($data[$this->slug_key]))
 			{
-				$this->stored[$this->slug_key] = $data[$this->slug_key] = $this->_slugify();
+				$this->stored[$this->slug_key] = $data[$this->slug_key] = $this->slugify();
 			}
 			else
 			{
@@ -730,6 +730,53 @@ class MY_Model extends CI_Model
 		}
 	}
 
+	/**
+	 * MY_Model::slugify()
+	 *
+	 * Generate a unique slug for the current row based on the table and a UUID
+	 *
+	 * @return string
+	 */
+
+	public function slugify($str = '')
+	{
+		$this->load->helper('inflector');
+		while (1)
+		{
+			if (is_null($this->slug_prefix))
+			{
+				$this->slug_prefix = str_replace(array('a', 'e', 'u', 'i', 'o'), '', singular($this->table));
+				$this->slug_prefix = str_replace('_', '-', $this->slug_prefix);
+			}
+			$slug = empty($this->slug_prefix) ? '' : $this->slug_prefix.'-';
+			$uuid   = sprintf('%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
+				// 32 bits for "time_low"
+				mt_rand(0, 0xffff), mt_rand(0, 0xffff),
+				// 16 bits for "time_mid"
+				mt_rand(0, 0xffff),
+				// 16 bits for "time_hi_and_version",
+
+				// four most significant bits holds version number 4
+				mt_rand(0, 0x0fff) | 0x4000,
+				// 16 bits, 8 bits for "clk_seq_hi_res",
+
+				// 8 bits for "clk_seq_low",
+
+				// two most significant bits holds zero and one for variant DCE1.1
+				mt_rand(0, 0x3fff) | 0x8000,
+				// 48 bits for "node"
+				mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff)
+			);
+			$slug   = url_title("{$slug}{$uuid}", '-', true);
+			$result = $this->db->where($this->slug_key, $slug)->limit(1)->get($this->table)->result();
+			if (empty($result))
+			{
+				break;
+			}
+		}
+		return $slug;
+	}
+
 	/********************************
 	 * Private functions
 	 *******************************/
@@ -801,53 +848,6 @@ class MY_Model extends CI_Model
 			$class       = preg_replace('#((_m|_model)$|$(m_))?#', '', strtolower($this->get_called_class()));
 			$this->table = plural(strtolower($class));
 		}
-	}
-
-	/**
-	 * MY_Model::_slugify()
-	 *
-	 * Generate a unique slug for the current row based on the table and a UUID
-	 *
-	 * @return string
-	 */
-
-	private function _slugify($str = '')
-	{
-		$this->load->helper('inflector');
-		while (1)
-		{
-			if (is_null($this->slug_prefix))
-			{
-				$this->slug_prefix = str_replace(array('a', 'e', 'u', 'i', 'o'), '', singular($this->table));
-				$this->slug_prefix = str_replace('_', '-', $this->slug_prefix);
-			}
-			$slug = empty($this->slug_prefix) ? '' : $this->slug_prefix.'-';
-			$uuid   = sprintf('%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
-				// 32 bits for "time_low"
-				mt_rand(0, 0xffff), mt_rand(0, 0xffff),
-				// 16 bits for "time_mid"
-				mt_rand(0, 0xffff),
-				// 16 bits for "time_hi_and_version",
-
-				// four most significant bits holds version number 4
-				mt_rand(0, 0x0fff) | 0x4000,
-				// 16 bits, 8 bits for "clk_seq_hi_res",
-
-				// 8 bits for "clk_seq_low",
-
-				// two most significant bits holds zero and one for variant DCE1.1
-				mt_rand(0, 0x3fff) | 0x8000,
-				// 48 bits for "node"
-				mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff)
-			);
-			$slug   = url_title("{$slug}{$uuid}", '-', true);
-			$result = $this->db->where($this->slug_key, $slug)->limit(1)->get($this->table)->result();
-			if (empty($result))
-			{
-				break;
-			}
-		}
-		return $slug;
 	}
 
 	/********************************
