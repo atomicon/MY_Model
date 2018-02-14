@@ -187,7 +187,6 @@ class MY_Model extends CI_Model
 			if (array_key_exists('updated', $data))
 			{
 				$this->stored['updated'] = $data['updated'] = date('Y-m-d H:i:s');
-
 			}
 			$this->where($this->primary_key, $this->stored[$this->primary_key]);
 			$result = $this->db->update($this->table, $data);
@@ -197,6 +196,10 @@ class MY_Model extends CI_Model
 			if (array_key_exists('created', $data))
 			{
 				$this->stored['created'] = $data['created'] = date('Y-m-d H:i:s');
+			}
+			if (array_key_exists('updated', $data))
+			{
+				$this->stored['updated'] = $data['updated'] = date('Y-m-d H:i:s');
 			}
 			$result = $this->db->insert($this->table, $data);
 			if ($result)
