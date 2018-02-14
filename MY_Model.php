@@ -5,7 +5,7 @@
  * A datamapper like model for CodeIgniter
  *
  * @author Yvo van Dillen
- * @version 1.0.0
+ * @version 1.0.1
  * @access public
  */
 
@@ -35,18 +35,6 @@ class MY_Model extends CI_Model
 	// the field containing the slug (optional)
 	public $slug_key = 'slug';
 
-	// the slug prefix, if empty it will auto generate
-	public $slug_prefix = null;
-
-	// do we have the table metadata
-	public $metadata = true;
-
-	// do we want to cache metadata? (saves queries)
-	public $cache_metadata = true;
-
-	// the cached metadata
-	public $cached_metadata = array();
-
 	// more results stored in here (where the first is always this)
 	public $all = array();
 
@@ -58,6 +46,7 @@ class MY_Model extends CI_Model
 	 */
 	function __construct($id = null)
 	{
+		parent::__construct();
 		$this->_get_table();
 		$this->_get_table_data();
 		if (!empty($id))
@@ -185,7 +174,7 @@ class MY_Model extends CI_Model
 		{
 			if (empty($data[$this->slug_key]))
 			{
-				$this->stored[$this->slug_key] = $data[$this->slug_key] = $this->slugify();
+				$this->stored[$this->slug_key] = $data[$this->slug_key] = $this->_slugify();
 			}
 			else
 			{
@@ -198,6 +187,7 @@ class MY_Model extends CI_Model
 			if (array_key_exists('updated', $data))
 			{
 				$this->stored['updated'] = $data['updated'] = date('Y-m-d H:i:s');
+
 			}
 			$this->where($this->primary_key, $this->stored[$this->primary_key]);
 			$result = $this->db->update($this->table, $data);
@@ -207,10 +197,6 @@ class MY_Model extends CI_Model
 			if (array_key_exists('created', $data))
 			{
 				$this->stored['created'] = $data['created'] = date('Y-m-d H:i:s');
-			}
-			if (array_key_exists('updated', $data))
-			{
-				$this->stored['updated'] = $data['updated'] = date('Y-m-d H:i:s');
 			}
 			$result = $this->db->insert($this->table, $data);
 			if ($result)
@@ -233,9 +219,6 @@ class MY_Model extends CI_Model
 	{
 		if ($this->exists())
 		{
-			// delete all metadata
-			$this->unset_all_metadata();
-
 			// delete self
 			$this->where($this->primary_key, $this->stored[$this->primary_key]);
 			return $this->db->delete($this->table);
@@ -247,6 +230,7 @@ class MY_Model extends CI_Model
 	 * MY_Model::fill()
 	 *
 	 * @param object|array $data
+	 * @param boolean $only_fill_stored if true it will only fill the stored variable
 	 * @return self
 	 */
 	public function fill($data, $only_fill_stored = TRUE)
@@ -339,252 +323,6 @@ class MY_Model extends CI_Model
 	}
 
 	/**
-	 * MY_Model::metadata()
-	 *
-	 * Get metadata for this object
-	 *
-	 * @param string $name The meta name
-	 * @param string $default (optional) The default value to use
-	 * @return string
-	 */
-	function metadata($name, $default = null)
-	{
-		if (!$this->metadata)
-		{
-			return $default;
-		}
-
-		if ($this->cache_metadata)
-		{
-			if (empty($this->cached_metadata))
-			{
-				$this->cached_metadata = array();
-
-				$rows = $this->db->where(array(
-					'object_name' => $this->table,
-					'object_id' => $this->id
-				))->order_by('name')->get('metadata')->result();
-
-				foreach ($rows as $row)
-				{
-					$this->cached_metadata[$row->name] = $row->value;
-				}
-			}
-
-			$result = $default;
-
-			if (array_key_exists($name, $this->cached_metadata))
-			{
-				$result = $this->cached_metadata[$name];
-			}
-
-			return $result;
-		}
-
-
-		$row = $this->db->where(array(
-			'object_name' => $this->table,
-			'object_id' => $this->id,
-			'name' => $name
-		))->limit(1)->get('metadata')->row();
-
-		return empty($row->value) ? $default : $row->value;
-	}
-
-	/**
-	 * MY_Model::set_metadata()
-	 *
-	 * Set metadata for this object
-	 *
-	 * @param string $name The meta name to set
-	 * @param string $value (optional) The value to set
-	 * @return boolean
-	 */
-	function set_metadata($name, $value = null)
-	{
-		$result = false;
-
-		if (!$this->metadata)
-		{
-			return $result;
-		}
-
-		if (!is_null($name))
-		{
-			if (is_array($name) && is_null($value))
-			{
-				$array = $name;
-				foreach ($array as $name => $value)
-				{
-					$this->set_metadata($name, $value);
-				}
-				return true;
-			}
-
-			$row = $this->db->where(array(
-				'object_name' => $this->table,
-				'object_id' => $this->id,
-				'name' => $name
-			))->limit(1)->get('metadata')->row();
-
-			if (empty($row))
-			{
-				$data   = array(
-					'object_name' => $this->table,
-					'object_id' => $this->id,
-					'name' => $name,
-					'value' => $value
-				);
-				$result = $this->db->insert('metadata', $data);
-			}
-			else
-			{
-				$this->db->set('value', $value);
-				$this->db->where('id', $row->id);
-				$result = $this->db->update('metadata');
-			}
-		}
-
-		if ($result && $this->cache_metadata && is_array($this->cached_metadata))
-		{
-			$this->cached_metadata[$name] = $value;
-		}
-
-		return $result;
-	}
-
-	/**
-	 * MY_Model::unset_metadata()
-	 *
-	 * Delete a certain metadata entry
-	 *
-	 * @param string $name The meta name to unset
-	 * @return string
-	 */
-	function unset_metadata($name)
-	{
-		if (!$this->metadata)
-		{
-			return false;
-		}
-
-		$row = $this->db->where(array(
-			'object_name' => $this->table,
-			'object_id' => $this->id,
-			'name' => $name
-		))->limit(1)->get('metadata')->row();
-
-		unset($this->cached_metadata[$name]);
-
-		if (!empty($row))
-		{
-			$this->db->where('id', $row->id);
-			return $this->db->delete('metadata');
-		}
-		return false;
-	}
-
-	/**
-	 * MY_Model::unset_all_metadata()
-	 *
-	 * Deletes all metadata associated with this object
-	 *
-	 * @return string
-	 */
-	function unset_all_metadata()
-	{
-		if (!$this->metadata)
-		{
-			return false;
-		}
-
-		if ($this->exists())
-		{
-			$this->cached_metadata = array();
-			return $this->db->where(array(
-				'object_name' => $this->table,
-				'object_id' => $this->id
-			))->delete('metadata');
-		}
-		return false;
-	}
-
-	/**
-	 * MY_Model::get_by_metadata()
-	 *
-	 * Gets all objects (self) with certain metadata
-	 *
-	 * @param string $name The meta name to get
-	 * @param string $value optional value
-	 * @param string $object_id (optional) object_id
-	 * @return self
-	 */
-	public function get_by_metadata($name, $value = false, $object_id = false)
-	{
-		if (!$this->metadata)
-		{
-			return $this;
-		}
-
-		$this->db->join('metadata', 'metadata.object_id = ' . $this->table . '.' . $this->primary_key);
-
-		$where = array(
-			'metadata.object_name' => $this->table,
-			'metadata.name' => $name
-		);
-
-		if ($value !== FALSE)
-		{
-			$where['metadata.value'] = $value;
-		}
-
-		if ($object_id !== FALSE)
-		{
-			$where['metadata.object_id'] = $object_id;
-		}
-
-		$this->db->select($this->table . '.*');
-		$this->db->where($where);
-		$this->db->from($this->table);
-		$result = $this->db->get()->result();
-
-		if (empty($result))
-		{
-			$this->reset();
-		}
-		else
-		{
-			$this->all = array();
-			foreach ($result as $index => $row)
-			{
-				if ($index == 0)
-				{
-					$object =& $this;
-				}
-				else
-				{
-					$class  = $this->get_called_class();
-					$object = new $class;
-				}
-				foreach ($row as $name => $value)
-				{
-					if (isset($object->stored[$name]))
-					{
-						$object->stored[$name] = $value;
-					}
-					else
-					{
-						$object->$name = $value;
-					}
-				}
-				$this->all[] = $object;
-			}
-		}
-
-		return $this;
-	}
-
-	/**
 	 * MY_Model::has_field()
 	 *
 	 * @param string $field The fieldname to check
@@ -630,8 +368,8 @@ class MY_Model extends CI_Model
 	 * MY_Model::__get()
 	 *
 	 * First checks if $name exists in the $stored variable
-	 * Second checks to see if it exists in the model
-	 * Third checks for the function __get_$name()
+	 * Second checks for the function __get_$name()
+	 * Third checks to see if it exists in the model
 	 * Fourth checks if the codeigniter has it
 	 *
 	 * @param mixed $name Name of the property or value to get
@@ -643,16 +381,16 @@ class MY_Model extends CI_Model
 		{
 			return $this->stored[$name];
 		}
-		else if (isset($this->$name))
-		{
-			return $this->$name;
-		}
 		else if (method_exists($this, '__get_' . $name))
 		{
 			return call_user_func(array(
 				$this,
 				'__get_' . $name
 			));
+		}
+		else if (isset($this->$name))
+		{
+			return $this->$name;
 		}
 		else if (isset(get_instance()->$name))
 		{
@@ -733,53 +471,6 @@ class MY_Model extends CI_Model
 		}
 	}
 
-	/**
-	 * MY_Model::slugify()
-	 *
-	 * Generate a unique slug for the current row based on the table and a UUID
-	 *
-	 * @return string
-	 */
-
-	public function slugify($str = '')
-	{
-		$this->load->helper('inflector');
-		while (1)
-		{
-			if (is_null($this->slug_prefix))
-			{
-				$this->slug_prefix = str_replace(array('a', 'e', 'u', 'i', 'o'), '', singular($this->table));
-				$this->slug_prefix = str_replace('_', '-', $this->slug_prefix);
-			}
-			$slug = empty($this->slug_prefix) ? '' : $this->slug_prefix.'-';
-			$uuid   = sprintf('%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
-				// 32 bits for "time_low"
-				mt_rand(0, 0xffff), mt_rand(0, 0xffff),
-				// 16 bits for "time_mid"
-				mt_rand(0, 0xffff),
-				// 16 bits for "time_hi_and_version",
-
-				// four most significant bits holds version number 4
-				mt_rand(0, 0x0fff) | 0x4000,
-				// 16 bits, 8 bits for "clk_seq_hi_res",
-
-				// 8 bits for "clk_seq_low",
-
-				// two most significant bits holds zero and one for variant DCE1.1
-				mt_rand(0, 0x3fff) | 0x8000,
-				// 48 bits for "node"
-				mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff)
-			);
-			$slug   = url_title("{$slug}{$uuid}", '-', true);
-			$result = $this->db->where($this->slug_key, $slug)->limit(1)->get($this->table)->result();
-			if (empty($result))
-			{
-				break;
-			}
-		}
-		return $slug;
-	}
-
 	/********************************
 	 * Private functions
 	 *******************************/
@@ -851,6 +542,50 @@ class MY_Model extends CI_Model
 			$class       = preg_replace('#((_m|_model)$|$(m_))?#', '', strtolower($this->get_called_class()));
 			$this->table = plural(strtolower($class));
 		}
+	}
+
+	/**
+	 * MY_Model::_slugify()
+	 *
+	 * Generate a unique slug for the current row based on the table and a UUID
+	 *
+	 * @return string
+	 */
+
+	private function _slugify($str = '')
+	{
+		$this->load->helper('inflector');
+		while (1)
+		{
+			$str  = empty($str) ? str_replace(array('a', 'e', 'u', 'i', 'o'), '', singular($this->table)) : $str;
+			$slug = empty($str) ? '' : $str . '-';
+
+			$uuid   = sprintf('%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
+				// 32 bits for "time_low"
+				mt_rand(0, 0xffff), mt_rand(0, 0xffff),
+				// 16 bits for "time_mid"
+				mt_rand(0, 0xffff),
+				// 16 bits for "time_hi_and_version",
+
+				// four most significant bits holds version number 4
+				mt_rand(0, 0x0fff) | 0x4000,
+				// 16 bits, 8 bits for "clk_seq_hi_res",
+
+				// 8 bits for "clk_seq_low",
+
+				// two most significant bits holds zero and one for variant DCE1.1
+				mt_rand(0, 0x3fff) | 0x8000,
+				// 48 bits for "node"
+				mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff)
+			);
+			$slug   = url_title("{$slug}{$uuid}", '-', true);
+			$result = $this->db->where($this->slug_key, $slug)->limit(1)->get($this->table)->result();
+			if (empty($result))
+			{
+				break;
+			}
+		}
+		return $slug;
 	}
 
 	/********************************
