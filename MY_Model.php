@@ -14,8 +14,8 @@ class MY_Model extends CI_Model
 	// contains all information about the tables
 	static $table_data = null;
 
-	// when does the table cache needs to be renewed? time to live in seconds
-	static $table_data_cache_ttl = 60;
+	// when does the table cache needs to be renewed? time to live in seconds (3600=1 hour)
+	static $table_data_cache_ttl = 3600;
 
 	// table name for this model
 	public $table = null;
