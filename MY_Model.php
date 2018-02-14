@@ -123,7 +123,7 @@ class MY_Model extends CI_Model
 				}
 				else
 				{
-					$class  = $this->get_called_class();
+					$class  = $this->_get_called_class();
 					$object = new $class;
 				}
 				foreach ($row as $name => $value)
@@ -539,7 +539,7 @@ class MY_Model extends CI_Model
 		if (!is_string($this->table))
 		{
 			$this->load->helper('inflector');
-			$class       = preg_replace('#((_m|_model)$|$(m_))?#', '', strtolower($this->get_called_class()));
+			$class       = preg_replace('#((_m|_model)$|$(m_))?#', '', strtolower($this->_get_called_class()));
 			$this->table = plural(strtolower($class));
 		}
 	}
@@ -593,13 +593,13 @@ class MY_Model extends CI_Model
 	 *******************************/
 
 	/**
-	 * MY_Model::get_called_class()
+	 * MY_Model::_get_called_class()
 	 *
 	 * Get the name of the calling model class
 	 *
 	 * @return string
 	 */
-	public function get_called_class()
+	private function _get_called_class()
 	{
 		if (function_exists('get_called_class'))
 		{
