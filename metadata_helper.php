@@ -14,7 +14,7 @@ CREATE TABLE `metadata` (
 
 if (!function_exists('get_metadata'))
 {
-	function get_metadata($name, $default = NULL, $object_name = NULL, $object_id = NULL)
+	function get_metadata($name, $default = NULL, $object_name = FALSE, $object_id = FALSE)
 	{
 		$ci = &get_instance();
 
@@ -31,7 +31,7 @@ if (!function_exists('get_metadata'))
 
 if (!function_exists('set_metadata'))
 {
-	function set_metadata($name, $value = NULL, $object_name = NULL, $object_id = NULL)
+	function set_metadata($name, $value = NULL, $object_name = FALSE, $object_id = FALSE)
 	{
 		$ci = &get_instance();
 
@@ -59,7 +59,7 @@ if (!function_exists('set_metadata'))
 
 if (!function_exists('unset_metadata'))
 {
-	function unset_metadata($name, $object_name = NULL, $object_id = NULL)
+	function unset_metadata($name, $object_name = FALSE, $object_id = FALSE)
 	{
 		$ci = &get_instance();
 
