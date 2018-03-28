@@ -5,7 +5,7 @@
  * A datamapper like model for CodeIgniter
  *
  * @author Yvo van Dillen
- * @version 1.0.1
+ * @version 1.0.2
  * @access public
  */
 
@@ -220,13 +220,15 @@ class MY_Model extends CI_Model
 	 */
 	public function delete()
 	{
+		$result = false;
 		if ($this->exists())
 		{
 			// delete self
 			$this->where($this->primary_key, $this->stored[$this->primary_key]);
-			return $this->db->delete($this->table);
+			$result = $this->db->delete($this->table);
 		}
-		return false;
+		$this->reset();
+		return $result;
 	}
 
 	/**
