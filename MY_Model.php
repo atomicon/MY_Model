@@ -46,7 +46,6 @@ class MY_Model extends CI_Model
 	 */
 	function __construct($id = null)
 	{
-		parent::__construct();
 		$this->_get_table();
 		$this->_get_table_data();
 		if (!empty($id))
