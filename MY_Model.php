@@ -475,9 +475,9 @@ class MY_Model extends CI_Model
 		}
 	}
 
-	/********************************
-	 * Private functions
-	 *******************************/
+	/***********************************
+	 * Private and protected functions
+	 **********************************/
 
 	/**
 	 * MY_Model::_get_table_data()
@@ -556,7 +556,7 @@ class MY_Model extends CI_Model
 	 * @return string
 	 */
 
-	private function _slugify($str = '')
+	protected function _slugify($str = '')
 	{
 		$this->load->helper('inflector');
 		while (1)
