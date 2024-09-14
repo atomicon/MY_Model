@@ -52,7 +52,7 @@ class MY_Model extends CI_Model
         $this->_get_table();
         $this->_get_table_data();
         if (!empty($id)) {
-            if (!empty($this->db)) {
+            if ($this->_database_connected()) {
                 $this->where($this->primary_key, $id);
                 $this->get();
                 if (!$this->exists()) {
@@ -105,7 +105,7 @@ class MY_Model extends CI_Model
      */
     function get()
     {
-        if (!empty($this->db)) {
+        if ($this->_database_connected()) {
             $result = $this->db->get($this->table)->result();
             $this->last_query = $this->db->last_query();
             if (empty($result)) {
@@ -146,7 +146,7 @@ class MY_Model extends CI_Model
     {
         $result = false;
 
-        if (!empty($this->db)) {
+        if ($this->_database_connected()) {
             $data = $this->stored;
 
             if (!in_array($this->primary_key, $this->protected)) {
@@ -212,7 +212,7 @@ class MY_Model extends CI_Model
     {
         $result = false;
 
-        if (!empty($this->db)) {
+        if ($this->_database_connected()) {
             if ($this->exists()) {
                 // delete self
                 $this->where(
@@ -281,7 +281,7 @@ class MY_Model extends CI_Model
      */
     public function count_all()
     {
-        if (!empty($this->db)) {
+        if ($this->_database_connected()) {
             $db = clone $this->db;
             $row = $db
                 ->select("COUNT(*) as count_all")
@@ -431,7 +431,10 @@ class MY_Model extends CI_Model
     {
         if (method_exists($this, $name)) {
             return call_user_func_array([$this, $name], $arguments);
-        } elseif (!empty($this->db) && method_exists($this->db, $name)) {
+        } elseif (
+            $this->_database_connected() &&
+            method_exists($this->db, $name)
+        ) {
             call_user_func_array([$this->db, $name], $arguments);
             return $this;
         } else {
@@ -564,7 +567,7 @@ class MY_Model extends CI_Model
                 mt_rand(0, 0xffff)
             );
             $slug = url_title("{$slug}{$uuid}", "-", true);
-            if (!empty($this->db)) {
+            if ($this->_database_connected()) {
                 $result = $this->db
                     ->where($this->slug_key, $slug)
                     ->limit(1)
@@ -578,6 +581,18 @@ class MY_Model extends CI_Model
             }
         }
         return $slug;
+    }
+
+    /**
+     * MY_Model::_database_connected()
+     *
+     * Checks whether we have a database connection
+     *
+     * @return boolean
+     */
+    protected function _database_connected()
+    {
+        return !empty(get_instance()->db);
     }
 
     /********************************
