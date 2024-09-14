@@ -533,7 +533,7 @@ class MY_Model extends CI_Model
 
     protected function _slugify($str = "")
     {
-		$this->load->helper('url');
+        $this->load->helper("url");
         $this->load->helper("inflector");
         while (1) {
             $str = empty($str) ? singular($this->table) : "";
