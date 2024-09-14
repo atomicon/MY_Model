@@ -533,17 +533,11 @@ class MY_Model extends CI_Model
 
     protected function _slugify($str = "")
     {
+		$this->load->helper('url');
         $this->load->helper("inflector");
         while (1) {
-            $str = empty($str)
-                ? str_replace(
-                    ["a", "e", "u", "i", "o"],
-                    "",
-                    singular($this->table)
-                )
-                : $str;
+            $str = empty($str) ? singular($this->table) : "";
             $slug = empty($str) ? "" : $str . "-";
-
             $uuid = sprintf(
                 "%04x%04x-%04x-%04x-%04x-%04x%04x%04x",
                 // 32 bits for "time_low"
