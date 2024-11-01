@@ -376,10 +376,10 @@ class MY_Model extends CI_Model
             return call_user_func([$this, "__get_" . $name]);
         } elseif (isset($this->$name)) {
             return $this->$name;
-        } elseif (isset(get_instance()->$name)) {
-            return get_instance()->$name;
         } elseif (isset($this->variables[$name])) {
             return $this->variables[$name];
+        } elseif (isset(get_instance()->$name)) {
+            return get_instance()->$name;
         }
         return null;
     }
